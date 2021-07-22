@@ -16,6 +16,7 @@ import {
   i18n,
   couldBeMinifiedCode,
   getLineAndColumnFromMatch,
+  AddonsLinterUserError,
 } from 'utils';
 import log from 'logger';
 import Collector from 'collector';
@@ -58,6 +59,20 @@ export default class Linter {
 
   get config() {
     return this._config;
+  }
+
+  validateConfig() {
+    const { minManifestVersion, maxManifestVersion } = this.config;
+    if (maxManifestVersion < minManifestVersion) {
+      throw new AddonsLinterUserError(
+        i18n._(oneLine`
+        Invalid manifest version range requested:
+        --min-manifest-version (currently set to ${minManifestVersion})
+        should not be greater than
+        --max-manifest-version (currently set to ${maxManifestVersion}).
+      `)
+      );
+    }
   }
 
   colorize(type) {
@@ -263,8 +278,12 @@ export default class Linter {
       _log.info('Retrieving metadata from manifest.json');
       const json = await this.io.getFileAsString(constants.MANIFEST_JSON);
       const manifestParser = new ManifestJSONParser(json, this.collector, {
-        selfHosted: this.config.selfHosted,
         io: this.io,
+        selfHosted: this.config.selfHosted,
+        schemaValidatorOptions: {
+          minManifestVersion: this.config.minManifestVersion,
+          maxManifestVersion: this.config.maxManifestVersion,
+        },
       });
       await manifestParser.validateIcons();
       if (manifestParser.isStaticTheme) {
@@ -328,6 +347,8 @@ export default class Linter {
       case '.htm':
         return HTMLScanner;
       case '.js':
+      case '.jsm':
+      case '.mjs':
         return JavaScriptScanner;
       case '.json':
         return JSONScanner;
@@ -537,6 +558,11 @@ export default class Linter {
   }
 
   async run(deps = {}) {
+    // Validate the config options from a linter perspective (in addition to the
+    // yargs validation that already happened when the options are being parsed)
+    // and throws if there are invalid options.
+    this.validateConfig();
+
     if (this.config.metadata === true) {
       try {
         await this.extractMetadata(deps);
@@ -679,9 +705,8 @@ export default class Linter {
         const fileDataMatch = fileData.match(nameRegex);
 
         if (fileDataMatch) {
-          const { matchedLine, matchedColumn } = getLineAndColumnFromMatch(
-            fileDataMatch
-          );
+          const { matchedLine, matchedColumn } =
+            getLineAndColumnFromMatch(fileDataMatch);
 
           this.collector.addWarning({
             ...messages.COINMINER_USAGE_DETECTED,
@@ -696,9 +721,8 @@ export default class Linter {
         const match = fileData.match(codeRegex);
 
         if (match) {
-          const { matchedLine, matchedColumn } = getLineAndColumnFromMatch(
-            match
-          );
+          const { matchedLine, matchedColumn } =
+            getLineAndColumnFromMatch(match);
 
           this.collector.addWarning({
             ...messages.COINMINER_USAGE_DETECTED,

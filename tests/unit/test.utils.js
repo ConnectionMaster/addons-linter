@@ -2,9 +2,13 @@ import { oneLine } from 'common-tags';
 import bcd from '@mdn/browser-compat-data';
 
 import {
+  AddonsLinterUserError,
+  basicCompatVersionComparison,
   buildI18nObject,
   checkMinNodeVersion,
   ensureFilenameExists,
+  errorParamsToUnsupportedVersionRange,
+  firefoxStrictMinVersion,
   getNodeReference,
   getPackageTypeAsString,
   getRootExpression,
@@ -12,12 +16,10 @@ import {
   i18n,
   ignorePrivateFunctions,
   isBrowserNamespace,
+  isCompatible,
   isLocalUrl,
   normalizePath,
   parseCspPolicy,
-  firefoxStrictMinVersion,
-  basicCompatVersionComparison,
-  isCompatible,
 } from 'utils';
 
 describe('getRootExpression()', () => {
@@ -66,7 +68,7 @@ describe('gettext()', () => {
     jest.doMock('utils', () => {
       return {
         // eslint-disable-next-line global-require
-        i18n: buildI18nObject(require('../fixtures/fr.js')),
+        i18n: buildI18nObject(require('../fixtures/fr')),
       };
     });
 
@@ -87,7 +89,7 @@ describe('gettext()', () => {
     jest.doMock('utils', () => {
       return {
         // eslint-disable-next-line global-require
-        i18n: buildI18nObject(require('../fixtures/ja.js')),
+        i18n: buildI18nObject(require('../fixtures/ja')),
       };
     });
 
@@ -110,7 +112,7 @@ describe('sprintf()', () => {
     jest.doMock('utils', () => {
       return {
         // eslint-disable-next-line global-require
-        i18n: buildI18nObject(require('../fixtures/de.js')),
+        i18n: buildI18nObject(require('../fixtures/de')),
       };
     });
 
@@ -687,5 +689,47 @@ describe('isCompatible', () => {
 
   it('should report runtime.getURL as incompatible for Firefox 44', () => {
     expect(isCompatible(bcd, 'runtime.getURL', 44, 'firefox')).toBe(false);
+  });
+});
+
+describe('errorParamsToUnsupportedVersionRange', () => {
+  it.each([
+    ['< 3', { min_manifest_version: 3 }],
+    ['> 2', { max_manifest_version: 2 }],
+    [
+      // This would not be actually used anywhere because each
+      // schema validation would be only including one of them
+      // and generate separate validation errors.
+      '< 2, > 4',
+      { min_manifest_version: 2, max_manifest_version: 4 },
+    ],
+    ['', {}],
+    ['', null],
+    ['', undefined],
+  ])(
+    'returns "%s" as version range string on error params %p',
+    (expectedString, errorParams) => {
+      expect(errorParamsToUnsupportedVersionRange(errorParams)).toEqual(
+        expectedString
+      );
+    }
+  );
+});
+
+describe('AddonsLinterUserError', () => {
+  it('should be an instance of Error', () => {
+    const error = new AddonsLinterUserError();
+    expect(error instanceof Error).toStrictEqual(true);
+  });
+
+  it('should have name set to the expected error name', () => {
+    const error = new AddonsLinterUserError();
+    expect(error.name).toStrictEqual('AddonsLinterUserError');
+  });
+
+  it('should have message set to the expected string', () => {
+    const errorMessage = 'Expected Error Message';
+    const error = new AddonsLinterUserError(errorMessage);
+    expect(error.message).toStrictEqual(errorMessage);
   });
 });

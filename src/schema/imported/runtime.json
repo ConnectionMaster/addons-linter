@@ -34,6 +34,7 @@
   "functions": [
     {
       "name": "getBackgroundPage",
+      "max_manifest_version": 2,
       "type": "function",
       "description": "Retrieves the JavaScript 'window' object for the background page running inside the current extension/app. If the background page is an event page, the system will ensure it is loaded before calling the callback. If there is no background page, an error is set.",
       "async": "callback",
@@ -618,7 +619,7 @@
     }
   ],
   "definitions": {
-    "Permission": {
+    "OptionalPermission": {
       "anyOf": [
         {
           "type": "string",
@@ -630,9 +631,9 @@
     }
   },
   "refs": {
-    "runtime#/definitions/Permission": {
+    "runtime#/definitions/OptionalPermission": {
       "namespace": "manifest",
-      "type": "Permission"
+      "type": "OptionalPermission"
     }
   },
   "types": {
@@ -735,7 +736,11 @@
     "PlatformArch": {
       "type": "string",
       "enum": [
+        "aarch64",
         "arm",
+        "ppc64",
+        "s390x",
+        "sparc64",
         "x86-32",
         "x86-64"
       ],

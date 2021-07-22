@@ -6,7 +6,9 @@ export const JS_SYNTAX_ERROR = {
   code: 'JS_SYNTAX_ERROR',
   message: i18n._('JavaScript syntax error'),
   description: i18n._(oneLine`There is a JavaScript syntax error in your
-    code; validation cannot continue on this file.`),
+    code, which might be related to some experimental JavaScript features that
+    aren't an official part of the language specification and therefore not
+    supported yet. The validation cannot continue on this file.`),
 };
 
 export const EVENT_LISTENER_FOURTH = {
@@ -122,6 +124,15 @@ export const UNSUPPORTED_API = {
   message: null,
   messageFormat: i18n._('{{api}} is not supported'),
   description: i18n._('This API has not been implemented by Firefox.'),
+};
+
+export const REMOVED_MV2_API = {
+  code: 'UNSUPPORTED_API',
+  message: null,
+  messageFormat: i18n._(
+    '"{{api}}" has been removed in Manifest Version 3 (`manifest_version` property)'
+  ),
+  description: null,
 };
 
 export const DEPRECATED_API = {
